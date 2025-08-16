@@ -12,7 +12,7 @@ let isProcessing = false;
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
-    initializeMatrixBackground();
+    initializeMatrixCanvas();
     initializeKeyboardShortcuts();
     showPage('landingPage');
 });
@@ -99,55 +99,56 @@ function initializeEventListeners() {
     document.getElementById('downloadDecryptedFile')?.addEventListener('click', downloadDecryptedFile);
 }
 
-// Initialize matrix background animation
-function initializeMatrixBackground() {
-    const matrixRain = document.querySelector('.matrix-rain');
-    
-    // Create falling characters effect
-    setInterval(() => {
-        createMatrixDrop();
-    }, 100);
-}
 
-function createMatrixDrop() {
-    const matrixRain = document.querySelector('.matrix-rain');
-    const drop = document.createElement('div');
-    
-    drop.style.position = 'absolute';
-    drop.style.left = Math.random() * 100 + '%';
-    drop.style.top = '-20px';
-    drop.style.color = '#00ff41';
-    drop.style.fontSize = '14px';
-    drop.style.opacity = '0.3';
-    drop.style.fontFamily = 'monospace';
-    drop.style.animation = 'fall 5s linear forwards';
-    drop.style.pointerEvents = 'none';
-    
-    // Random characters (binary, hex, letters)
-    const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    drop.textContent = chars[Math.floor(Math.random() * chars.length)];
-    
-    matrixRain.appendChild(drop);
-    
-    // Remove drop after animation
-    setTimeout(() => {
-        if (drop.parentNode) {
-            drop.parentNode.removeChild(drop);
-        }
-    }, 5000);
-}
+// Matrix Canvas Animation (Cyberpunk Matrix Rain)
+function initializeMatrixCanvas() {
+    const canvas = document.getElementById('matrix-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-// Add CSS for falling animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fall {
-        to {
-            top: 100vh;
-            opacity: 0;
+    // Set canvas size
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Matrix characters
+    const matrixChars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+    const fontSize = 22;
+    const columns = Math.floor(window.innerWidth / fontSize);
+    let drops = [];
+    for (let x = 0; x < columns; x++) {
+        drops[x] = Math.random() * -50;
+    }
+
+    function drawMatrix() {
+        // Cyberpunk glow background
+        ctx.fillStyle = 'rgba(10, 20, 20, 0.18)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.font = `bold ${fontSize}px monospace`;
+        for (let i = 0; i < drops.length; i++) {
+            // Pick a random character
+            const text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+            // Neon green with glow
+            ctx.shadowColor = '#00ff41';
+            ctx.shadowBlur = 16;
+            ctx.fillStyle = '#00ff41';
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            ctx.shadowBlur = 0;
+
+            // Randomize speed and reset
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i] += 1 + Math.random() * 0.5;
         }
     }
-`;
-document.head.appendChild(style);
+
+    setInterval(drawMatrix, 50);
+}
 
 // Page navigation functions
 function showPage(pageId) {
@@ -543,64 +544,47 @@ function handleFileSelection(file, infoId, isEncrypted = false) {
 // Encryption functions
 async function startTextEncryption() {
     if (isProcessing) return;
-    
     const text = document.getElementById('inputText').value.trim();
     if (!text) return;
-    
     setProcessingState(true);
     showLoading('Encrypting your text...');
-    
     try {
         const result = await ipcRenderer.invoke('encrypt-text', text, selectedAlgorithm);
-        
         hideLoading();
-        
         if (result.success) {
             showEncryptionResults(result);
         } else {
-            showToast('Encryption failed: ' + result.error, 'error');
+            showToast('Encryption failed: ' + getFriendlyError(result.error), 'error');
         }
     } catch (error) {
         hideLoading();
-        showToast('Encryption error: ' + error.message, 'error');
+        showToast('Encryption error: ' + getFriendlyError(error.message), 'error');
     }
-    
     setProcessingState(false);
 }
 
 async function startFileEncryption() {
     if (isProcessing || !selectedFilePath) return;
-    
     setProcessingState(true);
     let fileToEncrypt = selectedFilePath;
-    
     try {
         // If it's a folder, compress it first
         if (selectedType === 'folder') {
             showLoading('Compressing folder to ZIP...');
             const compressionResult = await ipcRenderer.invoke('compress-folder', selectedFilePath);
-            
             if (!compressionResult.success) {
-                throw new Error('Failed to compress folder: ' + compressionResult.error);
+                throw new Error('Failed to compress folder: ' + getFriendlyError(compressionResult.error));
             }
-            
             fileToEncrypt = compressionResult.zipPath;
             showLoading('Encrypting compressed folder...');
-            
-            // Clean up the temporary ZIP file after encryption
             window.tempZipPath = compressionResult.zipPath;
         } else {
             showLoading('Encrypting your file...');
         }
-        
         const result = await ipcRenderer.invoke('encrypt-file', fileToEncrypt, selectedAlgorithm);
-        
         hideLoading();
-        
         if (result.success) {
             showFileEncryptionResults(result);
-            
-            // Clean up temporary ZIP file if it was created for folder encryption
             if (selectedType === 'folder' && window.tempZipPath) {
                 try {
                     await ipcRenderer.invoke('cleanup-temp-file', window.tempZipPath);
@@ -610,72 +594,80 @@ async function startFileEncryption() {
                 }
             }
         } else {
-            showToast('File encryption failed: ' + result.error, 'error');
+            showToast('File encryption failed: ' + getFriendlyError(result.error), 'error');
         }
     } catch (error) {
         hideLoading();
-        showToast('File encryption error: ' + error.message, 'error');
+        showToast('File encryption error: ' + getFriendlyError(error.message), 'error');
     }
-    
     setProcessingState(false);
 }
 
 async function startTextDecryption() {
     if (isProcessing) return;
-    
     const key = document.getElementById('decryptionKey').value.trim();
     const encrypted = document.getElementById('encryptedTextArea').value.trim();
-    
     if (!key || !encrypted) return;
-    
     setProcessingState(true);
     showLoading('Decrypting your text...');
-    
     try {
         // Always use Fernet algorithm
         const result = await ipcRenderer.invoke('decrypt-text', encrypted, key, 'fernet');
-        
         hideLoading();
-        
         if (result.success) {
             showDecryptionResults(result);
         } else {
-            showToast('Decryption failed: ' + result.error, 'error');
+            showToast('Decryption failed: ' + getFriendlyError(result.error, 'text'), 'error');
         }
     } catch (error) {
         hideLoading();
-        showToast('Decryption error: ' + error.message, 'error');
+        showToast('Decryption error: ' + getFriendlyError(error.message), 'error');
     }
-    
     setProcessingState(false);
 }
 
 async function startFileDecryption() {
     if (isProcessing || !selectedFilePath) return;
-    
     const key = document.getElementById('decryptionKey').value.trim();
     if (!key) return;
-    
     setProcessingState(true);
     showLoading('Decrypting your file...');
-    
     try {
         // Always use Fernet algorithm
         const result = await ipcRenderer.invoke('decrypt-file', selectedFilePath, key, 'fernet');
-        
         hideLoading();
-        
         if (result.success) {
             showFileDecryptionResults(result);
         } else {
-            showToast('File decryption failed: ' + result.error, 'error');
+            showToast('File decryption failed: ' + getFriendlyError(result.error, 'file'), 'error');
         }
     } catch (error) {
         hideLoading();
-        showToast('File decryption error: ' + error.message, 'error');
+        showToast('File decryption error: ' + getFriendlyError(error.message), 'error');
     }
-    
     setProcessingState(false);
+}
+// Map technical errors to user-friendly messages
+function getFriendlyError(error, type) {
+    if (!error) return 'Unknown error.';
+    const msg = error.toString().toLowerCase();
+    if (msg.includes('invalid key')) return type === 'file' ? 'Invalid encryption key or invalid file.' : 'Invalid encryption key or invalid data.';
+    if (msg.includes('invalid token')) return type === 'file' ? 'Invalid encryption key or invalid file.' : 'Invalid encryption key or invalid data.';
+    if (msg.includes('wrong_final_block_length') || msg.includes('bad decrypt') || msg.includes('cipher') || msg.includes('openssl')) return type === 'file' ? 'Invalid encryption key or invalid file.' : 'Invalid encryption key or invalid data.';
+    if (msg.includes('not found')) return 'File or data not found.';
+    if (msg.includes('permission')) return 'Permission denied. Please check your file access rights.';
+    if (msg.includes('no such file')) return 'The selected file does not exist.';
+    if (msg.includes('unsupported')) return 'Unsupported file type or operation.';
+    if (msg.includes('corrupt')) return type === 'file' ? 'The file appears to be corrupted.' : 'The data appears to be corrupted.';
+    if (msg.includes('too large')) return 'The file is too large to process.';
+    if (msg.includes('empty')) return 'Input is empty. Please provide valid data.';
+    if (msg.includes('decrypt')) return type === 'file' ? 'Decryption failed. Please check your key and file.' : 'Decryption failed. Please check your key and data.';
+    if (msg.includes('encrypt')) return 'Encryption failed. Please check your input.';
+    if (msg.includes('zip')) return 'Error compressing or decompressing the folder.';
+    if (msg.includes('timeout')) return 'Operation timed out. Please try again.';
+    if (msg.includes('format')) return 'Invalid file or data format.';
+    // Add more mappings as needed
+    return error;
 }
 
 // Results display functions

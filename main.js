@@ -24,7 +24,7 @@ function createWindow() {
       contextIsolation: false,
       enableRemoteModule: true
     },
-    icon: path.join(__dirname, 'assets', 'icon.ico'),
+    icon: path.join(__dirname, 'icon.ico'),
     show: false,
     frame: true,
     resizable: true,

@@ -1,3 +1,52 @@
+/* Darkweb Cyberpunk Animated Overlay */
+.darkweb-overlay {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    opacity: 0.18;
+    mix-blend-mode: lighten;
+    background: repeating-linear-gradient(
+        to bottom,
+        #00ff41 0px,
+        #00ff41 1px,
+        transparent 1px,
+        transparent 8px
+    );
+    animation: darkweb-glitch 2.5s infinite linear alternate;
+}
+
+@keyframes darkweb-glitch {
+    0% { background-position-y: 0; opacity: 0.18; }
+    20% { background-position-y: 10px; opacity: 0.22; }
+    40% { background-position-y: 20px; opacity: 0.15; }
+    60% { background-position-y: 30px; opacity: 0.22; }
+    80% { background-position-y: 10px; opacity: 0.18; }
+    100% { background-position-y: 0; opacity: 0.18; }
+}
+
+/* Subtle animated noise overlay for extra cyberpunk effect */
+.darkweb-noise {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    opacity: 0.10;
+    background: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)"/></svg>');
+    background-size: 200px 200px;
+    animation: darkweb-noise-move 1.2s infinite linear alternate;
+}
+
+@keyframes darkweb-noise-move {
+    0% { background-position: 0 0; }
+    100% { background-position: 40px 60px; }
+}
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -6,7 +55,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Consolas', 'Courier New', 'monospace', monospace;
     background: #0a0a0a;
     color: #00ff41;
     overflow-x: hidden;
@@ -15,48 +64,68 @@ body {
 }
 
 /* Matrix Background Animation */
+
+/* Matrix Canvas Background */
 .matrix-bg {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     z-index: -1;
     overflow: hidden;
+    /* Animated cyberpunk gradient */
+    background: linear-gradient(120deg, #050d0d 0%, #0a1a1a 100%);
+    animation: cyberpunk-gradient 8s ease-in-out infinite alternate;
 }
 
-.matrix-rain {
+@keyframes cyberpunk-gradient {
+    0% {
+        background: linear-gradient(120deg, #050d0d 0%, #0a1a1a 100%);
+    }
+    50% {
+        background: linear-gradient(120deg, #0a1a1a 0%, #003311 100%);
+    }
+    100% {
+        background: linear-gradient(120deg, #050d0d 0%, #0a1a1a 100%);
+    }
+}
+
+/* Glowing grid overlay for extra cyberpunk effect */
+.darkweb-grid {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    opacity: 0.13;
+    background-image:
+        repeating-linear-gradient(to right, #00ff41 0 1px, transparent 1px 80px),
+        repeating-linear-gradient(to bottom, #00ff41 0 1px, transparent 1px 80px);
+    filter: drop-shadow(0 0 6px #00ff41) blur(0.5px);
+    animation: grid-move 6s linear infinite alternate;
+}
+
+@keyframes grid-move {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 40px 40px, 40px 40px; }
+}
+
+#matrix-canvas {
+    display: block;
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 65, 0.03) 50%, transparent 100%);
-    animation: matrix-scroll 20s linear infinite;
-}
-
-.matrix-rain::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 200%;
-    background-image: 
-        radial-gradient(circle at 20% 50%, rgba(0, 255, 65, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 50%, rgba(0, 255, 65, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 50%, rgba(0, 255, 65, 0.05) 0%, transparent 50%);
-    animation: matrix-float 15s ease-in-out infinite;
-}
-
-@keyframes matrix-scroll {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100%); }
-}
-
-@keyframes matrix-float {
-    0%, 100% { transform: translateX(-10px) scale(1); }
-    50% { transform: translateX(10px) scale(1.05); }
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 8px #00ff41) brightness(1.2) contrast(1.2) saturate(1.5);
+    background: transparent;
+    transition: opacity 0.5s;
 }
 
 /* Container */
@@ -99,7 +168,7 @@ body {
     font-size: 6rem;
     font-weight: bold;
     margin-bottom: 20px;
-    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    
 }
 
 .title i {
@@ -108,29 +177,17 @@ body {
 }
 
 .glow-text {
-    background: linear-gradient(45deg, #00ff41, #00cc33);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: glow-pulse 3s ease-in-out infinite alternate;
-}
-
-@keyframes glow-pulse {
-    0% { 
-        text-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
-        filter: brightness(1);
-    }
-    100% { 
-        text-shadow: 0 0 30px rgba(0, 255, 65, 0.8);
-        filter: brightness(1.2);
-    }
+    color: linear-gradient(120deg, #00ff41, #00cc33);
 }
 
 .subtitle {
     font-size: 1.5rem;
     color: #888;
     margin-bottom: 20px;
-    font-weight: 300;
+    font-weight: 700;
 }
 
 .description {
@@ -227,11 +284,11 @@ body {
 }
 
 .reset-btn {
-    background: linear-gradient(145deg, #ff4444, #cc3333);
+    background: linear-gradient(120deg, #00ff41, #00ff40d4);
     border: none;
     border-radius: 8px;
     padding: 12px 20px;
-    color: white;
+    color: rgb(0, 0, 0);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1rem;
@@ -239,7 +296,7 @@ body {
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+
     box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
     position: fixed;
     left: 20px;
@@ -264,7 +321,7 @@ body {
 }
 
 .reset-btn:hover {
-    background: linear-gradient(145deg, #ff6666, #dd4444);
+    background: linear-gradient(120deg, #00ff41, #00ff40d4);
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
 }
